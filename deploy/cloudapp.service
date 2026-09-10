@@ -1,0 +1,63 @@
+[Unit]
+Description=Personal cloud storage
+Documentation=file:///opt/cloudapp/CLOUD_STORAGE_SPEC.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cloudapp
+Group=cloudapp
+WorkingDirectory=/var/lib/cloudapp
+ExecStart=/opt/cloudapp/cloudapp serve
+Restart=always
+RestartSec=3
+
+# Credentials. Mode 0600, owned by root, readable by this unit only.
+EnvironmentFile=/etc/cloudapp/env
+
+# 384M rather than 256M: the tier 3 thumbnail worker decodes a single HEVC
+# keyframe, which is the one moment this process needs real memory (spec §5.4).
+# Everything else is JSON and should sit under 40M.
+MemoryMax=384M
+MemoryHigh=320M
+TasksMax=64
+
+# ffmpeg is niced to 19 by the worker itself; this keeps the whole unit off the
+# throat of anything else on the box.
+CPUWeight=50
+
+# Hardening. The process needs exactly one writable directory and outbound
+# network; everything else is closed.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RemoveIPC=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @obsolete
+
+# The database and its WAL sidecars live here. Nothing else is writable.
+ReadWritePaths=/var/lib/cloudapp
+
+# Only outbound TCP is needed: the API listens on loopback behind Nginx, and
+# storage is reached over HTTPS.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+IPAddressAllow=0.0.0.0/0
+
+[Install]
+WantedBy=multi-user.target

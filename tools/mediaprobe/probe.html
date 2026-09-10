@@ -1,0 +1,971 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camera Roll Probe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --ground:     #e9ecef;
+    --surface:    #ffffff;
+    --surface-2:  #f3f5f8;
+    --line:       #d3d9e0;
+    --line-soft:  #e3e8ed;
+    --ink:        #1a1e26;
+    --ink-2:      #5b6572;
+    --accent:     #b8700a;
+    --accent-ink: #ffffff;
+    --pass:       #1a7f45;
+    --fail:       #b3261e;
+    --warn:       #b8700a;
+    --idle:       #7c8794;
+    --pass-bg:    #e4f3ea;
+    --fail-bg:    #fbe9e7;
+    --warn-bg:    #f9eedb;
+    --idle-bg:    #eceff2;
+    --shadow:     0 1px 2px rgba(26, 30, 38, .06), 0 8px 24px -16px rgba(26, 30, 38, .3);
+
+    --f-ui:   "Archivo", "Segoe UI", system-ui, sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:     #12151a;
+      --surface:    #1a1e25;
+      --surface-2:  #22272f;
+      --line:       #2e353f;
+      --line-soft:  #262c34;
+      --ink:        #e4e8ee;
+      --ink-2:      #929cab;
+      --accent:     #e8a33d;
+      --accent-ink: #1a1200;
+      --pass:       #4ec97e;
+      --fail:       #ff7b72;
+      --warn:       #e8a33d;
+      --idle:       #8b95a3;
+      --pass-bg:    #16301f;
+      --fail-bg:    #351c1a;
+      --warn-bg:    #332715;
+      --idle-bg:    #232830;
+      --shadow:     0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:     #12151a;
+    --surface:    #1a1e25;
+    --surface-2:  #22272f;
+    --line:       #2e353f;
+    --line-soft:  #262c34;
+    --ink:        #e4e8ee;
+    --ink-2:      #929cab;
+    --accent:     #e8a33d;
+    --accent-ink: #1a1200;
+    --pass:       #4ec97e;
+    --fail:       #ff7b72;
+    --warn:       #e8a33d;
+    --idle:       #8b95a3;
+    --pass-bg:    #16301f;
+    --fail-bg:    #351c1a;
+    --warn-bg:    #332715;
+    --idle-bg:    #232830;
+    --shadow:     0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-ui);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  /* ---------------------------------------------------------- masthead */
+
+  .masthead { display: flex; flex-direction: column; gap: 10px; }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .eyebrow b { color: var(--accent); font-weight: 700; }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(26px, 5vw, 34px);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-2);
+    font-size: 15px;
+  }
+
+  /* ---------------------------------------------------------- verdict */
+
+  .verdict {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 3px;
+    border-left: 3px solid var(--idle);
+    background: var(--idle-bg);
+    font-size: 14px;
+  }
+  .verdict[data-state="pass"] { border-left-color: var(--pass); background: var(--pass-bg); }
+  .verdict[data-state="warn"] { border-left-color: var(--warn); background: var(--warn-bg); }
+  .verdict[data-state="fail"] { border-left-color: var(--fail); background: var(--fail-bg); }
+  .verdict-title { font-weight: 600; }
+  .verdict-body { color: var(--ink-2); }
+  .verdict > div { display: flex; flex-direction: column; gap: 2px; }
+
+  /* ---------------------------------------------------------- sections */
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .sec-head h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    font-family: var(--f-mono);
+  }
+  .sec-head .note {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  /* ---------------------------------------------------------- capabilities */
+
+  .caps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+    gap: 1px;
+    background: var(--line-soft);
+    border: 1px solid var(--line-soft);
+  }
+  .cap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface);
+  }
+  .cap-name { font-family: var(--f-mono); font-size: 12px; }
+  .cap-note { display: block; font-family: var(--f-ui); font-size: 11px; color: var(--ink-2); }
+
+  .flag {
+    flex: none;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    color: var(--idle);
+    background: var(--idle-bg);
+  }
+  .flag[data-state="pass"] { color: var(--pass); background: var(--pass-bg); }
+  .flag[data-state="fail"] { color: var(--fail); background: var(--fail-bg); }
+  .flag[data-state="warn"] { color: var(--warn); background: var(--warn-bg); }
+
+  /* ---------------------------------------------------------- dropzone */
+
+  .drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 30px 20px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    transition: border-color .15s, background .15s;
+  }
+  .drop.hot { border-color: var(--accent); background: var(--warn-bg); }
+  .drop p { margin: 0; color: var(--ink-2); font-size: 13px; max-width: 46ch; }
+
+  .btn {
+    font-family: var(--f-ui);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: none;
+    border-radius: 2px;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+  .btn.ghost {
+    color: var(--ink-2);
+    background: transparent;
+    border: 1px solid var(--line);
+    font-weight: 500;
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+  .btn:hover { filter: brightness(1.07); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------------------------------------------------------- results */
+
+  .results { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: 132px 1fr;
+  }
+  @media (max-width: 620px) { .card { grid-template-columns: 1fr; } }
+
+  .shot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: var(--surface-2);
+    border-right: 1px solid var(--line-soft);
+    min-height: 120px;
+  }
+  @media (max-width: 620px) {
+    .shot { border-right: none; border-bottom: 1px solid var(--line-soft); }
+  }
+  .shot img {
+    max-width: 100%;
+    max-height: 140px;
+    display: block;
+    background: var(--ground);
+  }
+  .shot .none {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    color: var(--ink-2);
+    text-align: center;
+  }
+
+  .body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+  .card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .card-name {
+    font-weight: 600;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+  .card-sub { font-family: var(--f-mono); font-size: 11px; color: var(--ink-2); }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px 16px;
+  }
+  .metric { display: flex; flex-direction: column; min-width: 0; }
+  .metric dt {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .metric dd {
+    margin: 0;
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .metric dd.hi { color: var(--accent); font-weight: 500; }
+
+  .trace {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    background: var(--surface-2);
+    border-left: 2px solid var(--line);
+    padding: 7px 10px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .trace .e { color: var(--fail); }
+  .trace .w { color: var(--warn); }
+  .trace .k { color: var(--pass); }
+
+  footer {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    line-height: 1.8;
+  }
+  footer b { color: var(--ink); font-weight: 500; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Step 0 de-risk &middot; <b>spec &sect;5.1 &ndash; &sect;5.3</b></div>
+    <h1>Camera Roll Probe</h1>
+    <p class="lede">
+      The personal cloud generates every thumbnail in the browser, so the VPS never
+      touches a byte. That only works if <em>this</em> device can decode what the
+      camera actually produces. Point this page at real photos and videos from the
+      phone you intend to use.
+    </p>
+  </header>
+
+  <div class="verdict" id="verdict" data-state="idle">
+    <div>
+      <span class="verdict-title" id="verdict-title">Waiting for files</span>
+      <span class="verdict-body" id="verdict-body">Capabilities below are probed on load. The pipeline verdict needs at least one real photo.</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head">
+      <h2>Device capabilities</h2>
+      <span class="note" id="ua-line">&mdash;</span>
+    </div>
+    <div class="caps" id="caps"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Input</h2>
+      <span class="note">HEIC &middot; HEIF &middot; DNG &middot; JPEG &middot; PNG &middot; MOV &middot; MP4</span>
+    </div>
+    <div class="drop" id="drop">
+      <button class="btn" id="pick">Choose photos &amp; videos</button>
+      <p>Or drag them here. Nothing is uploaded &mdash; every measurement below runs locally in this tab.
+         Include a portrait shot, a video over 100&nbsp;MB, and a ProRAW file if the phone shoots them.</p>
+      <input type="file" id="file" multiple accept="image/*,video/*,.heic,.heif,.HEIC,.HEIF,.dng,.DNG,.mov,.MOV" hidden>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Results</h2>
+      <button class="btn ghost" id="clear" type="button">Clear</button>
+    </div>
+    <div class="results" id="results"></div>
+  </section>
+
+  <footer>
+    <b>What a pass means.</b> Native decode succeeded, the thumbnail encoded as WebP,
+    and SHA-1 throughput is high enough that hashing a 500&nbsp;MB video will not stall the tab.<br>
+    <b>What a warn means.</b> The pipeline works, but on a slower tier &mdash; the heic2any WASM
+    fallback (~1.2&nbsp;MB, fetched once), a DNG preview extraction, or a PNG thumbnail
+    where WebP encoding was unavailable.<br>
+    <b>What a fail means.</b> This browser cannot build a thumbnail for that file, which in
+    practice means HEVC video outside Safari. The upload still proceeds and the original is
+    stored intact; the row goes to the Tier&nbsp;3 ffmpeg worker on the VPS (spec &sect;5.4), which
+    extracts the poster frame by byte-range within a couple of minutes.
+  </footer>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const THUMB_MAX = 400;
+  const HASH_SAMPLE = 16 << 20;   // hash at most 16 MB, then extrapolate
+  const HEIC2ANY = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
+
+  const state = { anyHeic: false, usedFallback: false, anyFail: false, files: 0, webpOk: true };
+
+  // ------------------------------------------------------------ formatting
+
+  const bytes = (n) => {
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+    if (n < 1073741824) return (n / 1048576).toFixed(1) + " MB";
+    return (n / 1073741824).toFixed(2) + " GB";
+  };
+  const ms = (n) => (n < 1000 ? n.toFixed(0) + " ms" : (n / 1000).toFixed(2) + " s");
+
+  // ------------------------------------------------------------ capabilities
+
+  function webpEncodeSupported() {
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 2;
+      return c.toDataURL("image/webp").startsWith("data:image/webp");
+    } catch { return false; }
+  }
+
+  function canPlay(type) {
+    const v = document.createElement("video");
+    const r = v.canPlayType(type);
+    return r === "" ? "no" : r;   // "probably" | "maybe" | "no"
+  }
+
+  function renderCaps() {
+    const v = document.createElement("video");
+    state.webpOk = webpEncodeSupported();
+
+    const rows = [
+      ["isSecureContext", window.isSecureContext,
+        window.isSecureContext ? "crypto.subtle is available" : "SHA-1 hashing is blocked on insecure origins"],
+      ["createImageBitmap", typeof createImageBitmap === "function",
+        "decodes stills off the main thread"],
+      ["OffscreenCanvas", typeof OffscreenCanvas === "function",
+        typeof OffscreenCanvas === "function" ? "thumbnails scale off-thread" : "falls back to a DOM canvas"],
+      ["canvas &rarr; WebP", state.webpOk,
+        state.webpOk ? "thumbnails encode at ~20 KB" : "thumbnails fall back to PNG, roughly 4x larger"],
+      ["crypto.subtle.digest", !!(window.crypto && crypto.subtle),
+        "SHA-1 per part, required by b2_upload_part"],
+      ["video/mp4 avc1 (H.264)", canPlay('video/mp4; codecs="avc1.42E01E"') !== "no",
+        canPlay('video/mp4; codecs="avc1.42E01E"')],
+      ["video/mp4 hvc1 (HEVC)", canPlay('video/mp4; codecs="hvc1"') !== "no",
+        canPlay('video/mp4; codecs="hvc1"') === "no"
+          ? "iPhone HEVC clips cannot be thumbnailed here"
+          : canPlay('video/mp4; codecs="hvc1"')],
+      ["video seek + canvas", typeof v.canPlayType === "function",
+        "poster frame at 10% of duration"],
+    ];
+
+    $("caps").innerHTML = rows.map(([name, good, note]) => `
+      <div class="cap">
+        <span class="cap-name">${name}<span class="cap-note">${note}</span></span>
+        <span class="flag" data-state="${good ? "pass" : "fail"}">${good ? "YES" : "NO"}</span>
+      </div>`).join("");
+
+    $("ua-line").textContent = navigator.userAgent.length > 76
+      ? navigator.userAgent.slice(0, 76) + "…"
+      : navigator.userAgent;
+  }
+
+  // ------------------------------------------------------------ container sniff
+
+  async function sniff(file) {
+    const head = new Uint8Array(await file.slice(0, 32).arrayBuffer());
+    const ascii = (o, n) => String.fromCharCode.apply(null, Array.from(head.slice(o, o + n)));
+
+    if (head.length >= 12 && ascii(4, 4) === "ftyp") {
+      const brand = ascii(8, 4).trim();
+      const heic = ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heim", "heis"];
+      return {
+        brand: "ftyp/" + brand,
+        isHeic: heic.includes(brand),
+        isVideo: ["isom", "mp42", "mp41", "iso2", "iso5", "iso6", "qt", "M4V"].includes(brand),
+      };
+    }
+    if (head[0] === 0xff && head[1] === 0xd8) return { brand: "JPEG/SOI", isHeic: false, isVideo: false };
+    if (ascii(1, 3) === "PNG") return { brand: "PNG", isHeic: false, isVideo: false };
+    if (ascii(0, 4) === "RIFF" && ascii(8, 4) === "WEBP") return { brand: "RIFF/WEBP", isHeic: false, isVideo: false };
+    if (ascii(0, 3) === "GIF") return { brand: ascii(0, 6), isHeic: false, isVideo: false };
+
+    // TIFF magic — ProRAW .DNG lives here, and carries a full-size JPEG preview.
+    const tiffLE = ascii(0, 2) === "II" && head[2] === 0x2a && head[3] === 0x00;
+    const tiffBE = ascii(0, 2) === "MM" && head[2] === 0x00 && head[3] === 0x2a;
+    if (tiffLE || tiffBE) {
+      return { brand: "TIFF/DNG (" + (tiffLE ? "little" : "big") + "-endian)", isHeic: false, isVideo: false, isRaw: true };
+    }
+
+    return { brand: "unrecognised", isHeic: false, isVideo: false };
+  }
+
+  // ------------------------------------------------------------ DNG preview (tier 2b)
+
+  // A DNG is a TIFF. Apple ProRAW embeds a full-size JPEG preview in one of the
+  // SubIFDs, so the largest JPEG-compressed image in the IFD chain can be sliced
+  // straight out of the File and decoded normally — no raw processing, no library.
+  async function extractDngPreview(file) {
+    const headSize = Math.min(file.size, 1 << 20);
+    const dv = new DataView(await file.slice(0, headSize).arrayBuffer());
+    const le = dv.getUint16(0) === 0x4949;
+    const u16 = (o) => dv.getUint16(o, le);
+    const u32 = (o) => dv.getUint32(o, le);
+    if (u16(2) !== 42) throw new Error("not a TIFF header");
+
+    const found = [];
+    const seen = new Set();
+
+    const walk = (off, depth) => {
+      if (depth > 3 || off <= 0 || off + 2 > dv.byteLength || seen.has(off)) return;
+      seen.add(off);
+
+      const n = u16(off);
+      if (n === 0 || n > 512 || off + 2 + n * 12 + 4 > dv.byteLength) return;
+
+      let comp = 0, jpegOff = 0, jpegLen = 0, stripOff = 0, stripLen = 0, w = 0, h = 0;
+
+      for (let i = 0; i < n; i++) {
+        const e = off + 2 + i * 12;
+        const tag = u16(e), type = u16(e + 2), count = u32(e + 4);
+        const val = () => (type === 3 ? u16(e + 8) : u32(e + 8));
+
+        if (tag === 0x0100) w = val();            // ImageWidth
+        else if (tag === 0x0101) h = val();       // ImageLength
+        else if (tag === 0x0103) comp = val();    // Compression, 7 = JPEG
+        else if (tag === 0x0201) jpegOff = u32(e + 8);
+        else if (tag === 0x0202) jpegLen = u32(e + 8);
+        else if (tag === 0x0111 && count === 1) stripOff = val();
+        else if (tag === 0x0117 && count === 1) stripLen = val();
+        else if (tag === 0x014a) {                // SubIFDs
+          if (count === 1) walk(u32(e + 8), depth + 1);
+          else {
+            const at = u32(e + 8);
+            for (let k = 0; k < Math.min(count, 16); k++) {
+              if (at + k * 4 + 4 <= dv.byteLength) walk(u32(at + k * 4), depth + 1);
+            }
+          }
+        }
+      }
+
+      if (jpegOff && jpegLen) found.push({ off: jpegOff, len: jpegLen, w, h });
+      else if (comp === 7 && stripOff && stripLen) found.push({ off: stripOff, len: stripLen, w, h });
+
+      walk(u32(off + 2 + n * 12), depth);         // next IFD in the chain
+    };
+
+    walk(u32(4), 0);
+    if (!found.length) throw new Error("no embedded JPEG preview found in this DNG");
+
+    found.sort((a, b) => b.len - a.len);
+    const best = found[0];
+    if (best.off + best.len > file.size) throw new Error("preview offset runs past end of file");
+    return { blob: file.slice(best.off, best.off + best.len, "image/jpeg"), ...best };
+  }
+
+  // ------------------------------------------------------------ EXIF (JPEG)
+
+  // Reads Orientation (0x0112) and DateTimeOriginal (0x9003) out of the APP1
+  // segment. Orientation is the reason spec §5.1 passes imageOrientation:
+  // 'from-image' — without it every portrait photo lands sideways.
+  function parseExif(buf) {
+    try {
+      const dv = new DataView(buf);
+      if (dv.getUint16(0) !== 0xffd8) return null;
+
+      let off = 2;
+      while (off + 4 < dv.byteLength) {
+        if (dv.getUint8(off) !== 0xff) break;
+        const marker = dv.getUint8(off + 1);
+        if (marker === 0xda) break;                        // start of scan
+        const size = dv.getUint16(off + 2);
+        if (marker === 0xe1 && dv.getUint32(off + 4) === 0x45786966) {
+          return readTiff(dv, off + 10);
+        }
+        off += 2 + size;
+      }
+    } catch { /* malformed EXIF is not an error worth failing on */ }
+    return null;
+  }
+
+  function readTiff(dv, base) {
+    const le = dv.getUint16(base) === 0x4949;
+    const u16 = (o) => dv.getUint16(o, le);
+    const u32 = (o) => dv.getUint32(o, le);
+    if (u16(base + 2) !== 42) return null;
+
+    const out = {};
+    const walk = (dirOff, depth) => {
+      if (depth > 2 || dirOff + 2 > dv.byteLength) return;
+      const n = u16(dirOff);
+      for (let i = 0; i < n; i++) {
+        const e = dirOff + 2 + i * 12;
+        if (e + 12 > dv.byteLength) return;
+        const tag = u16(e), type = u16(e + 2), count = u32(e + 4);
+        if (tag === 0x0112) out.orientation = u16(e + 8);
+        if (tag === 0x8769) walk(base + u32(e + 8), depth + 1);
+        if (tag === 0x9003 && type === 2 && count > 1 && count < 64) {
+          const at = count > 4 ? base + u32(e + 8) : e + 8;
+          let s = "";
+          for (let k = 0; k < count - 1 && at + k < dv.byteLength; k++) {
+            s += String.fromCharCode(dv.getUint8(at + k));
+          }
+          out.dateTimeOriginal = s;
+        }
+      }
+    };
+    walk(base + u32(base + 4), 0);
+    return out;
+  }
+
+  // ------------------------------------------------------------ thumbnails
+
+  async function toThumb(source, w, h) {
+    const scale = Math.min(1, THUMB_MAX / Math.max(w, h));
+    const tw = Math.max(1, Math.round(w * scale));
+    const th = Math.max(1, Math.round(h * scale));
+
+    let canvas;
+    if (typeof OffscreenCanvas === "function") {
+      canvas = new OffscreenCanvas(tw, th);
+    } else {
+      canvas = document.createElement("canvas");
+      canvas.width = tw; canvas.height = th;
+    }
+    canvas.getContext("2d").drawImage(source, 0, 0, tw, th);
+
+    const blob = canvas.convertToBlob
+      ? await canvas.convertToBlob({ type: "image/webp", quality: 0.82 })
+      : await new Promise((r) => canvas.toBlob(r, "image/webp", 0.82));
+
+    return { blob, tw, th };
+  }
+
+  let heicPromise = null;
+  function loadHeic2any() {
+    if (heicPromise) return heicPromise;
+    heicPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = HEIC2ANY;
+      s.onload = () => (window.heic2any ? resolve(window.heic2any) : reject(new Error("global missing")));
+      s.onerror = () => reject(new Error("network or CSP blocked " + HEIC2ANY));
+      document.head.appendChild(s);
+    });
+    return heicPromise;
+  }
+
+  // ------------------------------------------------------------ hashing
+
+  async function hashSample(file) {
+    if (!(window.crypto && crypto.subtle)) return null;
+    const size = Math.min(file.size, HASH_SAMPLE);
+    const buf = await file.slice(0, size).arrayBuffer();
+    const t0 = performance.now();
+    const digest = await crypto.subtle.digest("SHA-1", buf);
+    const dt = performance.now() - t0;
+    const mbps = (size / 1048576) / (dt / 1000);
+    return {
+      sampled: size,
+      elapsed: dt,
+      mbps,
+      projected: (file.size / 1048576) / mbps * 1000,
+      hex: Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    };
+  }
+
+  // ------------------------------------------------------------ video
+
+  function once(el, event, timeout) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => { cleanup(); reject(new Error(event + " timed out after " + timeout + "ms")); }, timeout);
+      const onOk = () => { cleanup(); resolve(); };
+      const onErr = () => { cleanup(); reject(new Error("media error while waiting for " + event)); };
+      function cleanup() {
+        clearTimeout(t);
+        el.removeEventListener(event, onOk);
+        el.removeEventListener("error", onErr);
+      }
+      el.addEventListener(event, onOk, { once: true });
+      el.addEventListener("error", onErr, { once: true });
+    });
+  }
+
+  async function probeVideo(file, log) {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.muted = true;
+    v.playsInline = true;
+    v.setAttribute("playsinline", "");
+    v.src = url;
+
+    try {
+      const t0 = performance.now();
+      await once(v, "loadedmetadata", 10000);
+      log("k", "loadedmetadata in " + ms(performance.now() - t0));
+
+      const meta = { w: v.videoWidth, h: v.videoHeight, duration: v.duration };
+      if (!meta.w || !meta.h) throw new Error("videoWidth/Height are 0 — codec not decodable here");
+
+      const target = Math.min(1.0, (isFinite(meta.duration) ? meta.duration : 10) * 0.1);
+      const t1 = performance.now();
+      v.currentTime = target;
+      await once(v, "seeked", 10000);
+      log("k", "seeked to " + target.toFixed(2) + "s in " + ms(performance.now() - t1));
+
+      const t2 = performance.now();
+      const thumb = await toThumb(v, meta.w, meta.h);
+      log("k", "poster frame encoded in " + ms(performance.now() - t2));
+      return { meta, thumb };
+    } finally {
+      URL.revokeObjectURL(url);
+      v.removeAttribute("src");
+      v.load();
+    }
+  }
+
+  // ------------------------------------------------------------ one file
+
+  async function probeFile(file, isSelfTest) {
+    const lines = [];
+    const log = (cls, text) => lines.push({ cls, text });
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="shot"><span class="none">DECODING</span></div>
+      <div class="body">
+        <div class="card-head">
+          <span class="card-name"></span>
+          <span class="card-sub"></span>
+        </div>
+        <dl class="metrics"></dl>
+        <div class="trace"></div>
+      </div>`;
+    card.querySelector(".card-name").textContent = file.name;
+    $("results").prepend(card);
+
+    const container = await sniff(file);
+    card.querySelector(".card-sub").textContent =
+      bytes(file.size) + " · " + (file.type || "type unreported") + " · " + container.brand;
+
+    if (container.isHeic) state.anyHeic = true;
+
+    const metrics = [];
+    let thumb = null, dims = null, path = "—", exif = null;
+
+    const isVideo = (file.type || "").startsWith("video/") || container.isVideo;
+
+    try {
+      if (isVideo) {
+        const r = await probeVideo(file, log);
+        dims = { w: r.meta.w, h: r.meta.h };
+        thumb = r.thumb;
+        path = "native <video>";
+        metrics.push(["duration", isFinite(r.meta.duration) ? r.meta.duration.toFixed(2) + " s" : "unknown"]);
+      } else {
+        // Still image: native decode first, per spec §5.1.
+        let bitmap = null;
+        let decodeSource = file;
+
+        if (container.isRaw) {
+          // Tier 2b: pull the embedded JPEG preview out rather than decoding raw.
+          const tr = performance.now();
+          const preview = await extractDngPreview(file);
+          decodeSource = preview.blob;
+          log("k", "DNG preview " + preview.w + "×" + preview.h + " (" + bytes(preview.len) +
+            ") extracted at offset " + preview.off + " in " + ms(performance.now() - tr));
+        }
+
+        const t0 = performance.now();
+        try {
+          bitmap = await createImageBitmap(decodeSource, { imageOrientation: "from-image" });
+          path = container.isRaw ? "DNG embedded preview" : "native createImageBitmap";
+          log("k", "native decode in " + ms(performance.now() - t0));
+        } catch (err) {
+          log("w", "native decode failed: " + err.message);
+          if (!container.isHeic) throw err;
+
+          log("w", "falling back to heic2any (≈1.2 MB WASM)…");
+          const t1 = performance.now();
+          const heic2any = await loadHeic2any();
+          log("k", "heic2any loaded in " + ms(performance.now() - t1));
+
+          const t2 = performance.now();
+          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+          const out = Array.isArray(converted) ? converted[0] : converted;
+          bitmap = await createImageBitmap(out, { imageOrientation: "from-image" });
+          path = "heic2any fallback";
+          state.usedFallback = true;
+          log("w", "fallback decode in " + ms(performance.now() - t2));
+        }
+
+        dims = { w: bitmap.width, h: bitmap.height };
+        const t3 = performance.now();
+        thumb = await toThumb(bitmap, bitmap.width, bitmap.height);
+        log("k", "thumbnail " + thumb.tw + "×" + thumb.th + " encoded in " + ms(performance.now() - t3));
+        bitmap.close && bitmap.close();
+
+        const head64 = await file.slice(0, 65536).arrayBuffer();
+        // A DNG is TIFF all the way down, so its IFD chain is read directly
+        // rather than hunting for a JPEG APP1 segment that does not exist.
+        exif = container.isRaw ? readTiff(new DataView(head64), 0) : parseExif(head64);
+      }
+    } catch (err) {
+      state.anyFail = true;
+      path = "FAILED";
+      log("e", "no thumbnail: " + err.message);
+      log("w", "spec §5.1: the original still uploads, thumb_status='unsupported'");
+    }
+
+    // --- shot
+    const shot = card.querySelector(".shot");
+    if (thumb && thumb.blob) {
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(thumb.blob);
+      img.alt = "Generated thumbnail for " + file.name;
+      shot.replaceChildren(img);
+    } else {
+      shot.replaceChildren(Object.assign(document.createElement("span"), {
+        className: "none", textContent: "NO THUMBNAIL",
+      }));
+    }
+
+    // --- metrics
+    metrics.unshift(["decode path", path]);
+    if (dims) metrics.push(["source", dims.w + " × " + dims.h]);
+    if (thumb && thumb.blob) {
+      const fmt = thumb.blob.type || "unknown";
+      if (fmt !== "image/webp") { state.webpOk = false; log("w", "canvas encoded " + fmt + ", not WebP"); }
+      metrics.push(["thumbnail", bytes(thumb.blob.size) + " " + fmt.replace("image/", "")]);
+      metrics.push(["ratio", (file.size / thumb.blob.size).toFixed(0) + "× smaller"]);
+    }
+
+    if (exif && exif.orientation) {
+      metrics.push(["EXIF orientation", exif.orientation + (exif.orientation > 1 ? " (rotated)" : " (upright)")]);
+      if (exif.orientation > 1) log("k", "orientation " + exif.orientation + " applied by imageOrientation:'from-image'");
+    }
+    if (exif && exif.dateTimeOriginal) {
+      metrics.push(["taken_at", exif.dateTimeOriginal]);
+    } else {
+      metrics.push(["taken_at", new Date(file.lastModified).toISOString().slice(0, 19).replace("T", " ")]);
+      log("w", "no EXIF DateTimeOriginal; falling back to file.lastModified");
+    }
+
+    const hash = await hashSample(file);
+    if (hash) {
+      metrics.push(["SHA-1 rate", hash.mbps.toFixed(0) + " MB/s"]);
+      metrics.push(["full-file hash", ms(hash.projected)]);
+      log(hash.projected > 5000 ? "w" : "k",
+        "hashed " + bytes(hash.sampled) + " in " + ms(hash.elapsed) +
+        " → " + ms(hash.projected) + " projected for this file");
+    } else {
+      log("e", "crypto.subtle unavailable — b2_upload_part cannot be signed from this origin");
+    }
+
+    card.querySelector(".metrics").innerHTML = metrics.map(([k, val]) => {
+      const v = String(val);
+      const notable = k === "decode path" && v !== "native createImageBitmap" && v !== "native <video>";
+      return `
+      <div class="metric">
+        <dt>${k}</dt>
+        <dd${notable ? ' class="hi"' : ""}>${v}</dd>
+      </div>`;
+    }).join("");
+
+    card.querySelector(".trace").innerHTML = lines
+      .map((l) => `<span class="${l.cls}">${l.cls === "e" ? "✗" : l.cls === "w" ? "!" : "✓"} ${l.text}</span>`)
+      .join("\n");
+
+    if (!isSelfTest) { state.files++; updateVerdict(); }
+  }
+
+  // ------------------------------------------------------------ verdict
+
+  function updateVerdict() {
+    const el = $("verdict");
+    let s = "pass";
+    let title = "This device can run the pipeline";
+    let body = "Native decode, WebP thumbnails, and SHA-1 throughput all check out. The VPS stays out of the media path.";
+
+    if (state.anyFail) {
+      s = "fail";
+      title = "At least one file could not be thumbnailed here";
+      body = "Uploads still succeed and originals are stored intact, but those files show a generic icon in the grid. Check the failing card's trace.";
+    } else if (state.usedFallback) {
+      s = "warn";
+      title = "HEIC works, but only through the WASM fallback";
+      body = "Native decode failed, so heic2any carried it. Expect a one-time ~1.2 MB download and noticeably slower decodes. Test on the iPhone itself — Safari decodes HEIC natively.";
+    } else if (!state.webpOk) {
+      s = "warn";
+      title = "Thumbnails are not encoding as WebP";
+      body = "The canvas fell back to PNG, which is roughly 4× larger. Storage and CDN cost rise accordingly, but nothing breaks.";
+    } else if (state.anyHeic) {
+      title = "HEIC decodes natively here";
+      body = "No fallback needed. This is the path the spec assumes for iPhone photos.";
+    }
+
+    el.dataset.state = s;
+    $("verdict-title").textContent = title;
+    $("verdict-body").textContent = body + (state.files ? "  (" + state.files + " file" + (state.files === 1 ? "" : "s") + " probed)" : "");
+  }
+
+  // ------------------------------------------------------------ self-test
+
+  // Runs on load so the page opens showing a real measurement rather than an
+  // empty shell. Synthesises a 1600×1000 image, then puts it through exactly
+  // the same path a camera file takes.
+  async function selfTest() {
+    const c = document.createElement("canvas");
+    c.width = 1600; c.height = 1000;
+    const ctx = c.getContext("2d");
+    const g = ctx.createLinearGradient(0, 0, 1600, 1000);
+    g.addColorStop(0, "#b8700a"); g.addColorStop(0.5, "#1a1e26"); g.addColorStop(1, "#4ec97e");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 1600, 1000);
+    for (let i = 0; i < 260; i++) {
+      ctx.fillStyle = `hsl(${(i * 37) % 360} 70% 55% / .5)`;
+      ctx.fillRect((i * 97) % 1600, (i * 61) % 1000, 40, 40);
+    }
+    const blob = await new Promise((r) => c.toBlob(r, "image/png"));
+    const file = new File([blob], "self-test-1600x1000.png", { type: "image/png" });
+    await probeFile(file, true);
+  }
+
+  // ------------------------------------------------------------ wiring
+
+  function accept(list) {
+    for (const f of list) probeFile(f, false);
+  }
+
+  $("pick").addEventListener("click", () => $("file").click());
+  $("file").addEventListener("change", (e) => { accept(e.target.files); e.target.value = ""; });
+  $("clear").addEventListener("click", () => {
+    $("results").replaceChildren();
+    Object.assign(state, { anyHeic: false, usedFallback: false, anyFail: false, files: 0, webpOk: webpEncodeSupported() });
+    $("verdict").dataset.state = "idle";
+    $("verdict-title").textContent = "Waiting for files";
+    $("verdict-body").textContent = "Capabilities above are probed on load. The pipeline verdict needs at least one real photo.";
+    selfTest();
+  });
+
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((ev) =>
+    drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("hot"); }));
+  ["dragleave", "drop"].forEach((ev) =>
+    drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("hot"); }));
+  drop.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.files) accept(e.dataTransfer.files); });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+
+  renderCaps();
+  selfTest();
+})();
+</script>

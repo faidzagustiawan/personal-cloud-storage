@@ -1,0 +1,10 @@
+{
+  "name": "projecthermes",
+  "private": true,
+  "description": "Delegating scripts so the repo root is a usable working directory. The real frontend package is in frontend/.",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "typecheck": "cd frontend && npm run typecheck"
+  }
+}

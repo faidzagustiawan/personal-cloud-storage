@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* The chrome stays quiet on purpose: in a photo library the pictures supply
+   all the colour, and a strongly branded shell competes with them. The amber
+   accent is carried over from the Step 0 probe so the project reads as one
+   thing, and it appears only on controls the user acts on. */
+
+:root {
+  --ground: #f2f3f5;
+  --surface: #ffffff;
+  --surface-2: #f7f8f9;
+  --line: #dfe3e8;
+  --line-soft: #eceff2;
+  --ink: #16181d;
+  --ink-2: #656d78;
+  --ink-3: #939ba5;
+  --accent: #b8700a;
+  --accent-ink: #ffffff;
+  --accent-soft: #f8eeda;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+  --ok: #1a7f45;
+  --shadow: 0 1px 2px rgb(22 24 29 / 6%), 0 8px 24px -18px rgb(22 24 29 / 35%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0e1013;
+    --surface: #16191e;
+    --surface-2: #1d2127;
+    --line: #282d35;
+    --line-soft: #20242a;
+    --ink: #e8eaee;
+    --ink-2: #949ca7;
+    --ink-3: #6d757f;
+    --accent: #e8a33d;
+    --accent-ink: #1a1200;
+    --accent-soft: #2e2413;
+    --danger: #ff7b72;
+    --danger-soft: #331d1b;
+    --ok: #4ec97e;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -18px rgb(0 0 0 / 80%);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #0e1013;
+  --surface: #16191e;
+  --surface-2: #1d2127;
+  --line: #282d35;
+  --line-soft: #20242a;
+  --ink: #e8eaee;
+  --ink-2: #949ca7;
+  --ink-3: #6d757f;
+  --accent: #e8a33d;
+  --accent-ink: #1a1200;
+  --accent-soft: #2e2413;
+  --danger: #ff7b72;
+  --danger-soft: #331d1b;
+  --ok: #4ec97e;
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -18px rgb(0 0 0 / 80%);
+}
+
+/* Map the runtime variables into Tailwind's theme so utilities like
+   bg-surface and text-ink follow the active theme. */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok: var(--ok);
+
+  --font-sans: "Archivo", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Digits that sit in columns — sizes, dimensions, the storage meter — need to
+   line up, and proportional figures make a usage readout jitter as it updates. */
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

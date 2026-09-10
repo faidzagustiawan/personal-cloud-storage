@@ -1,0 +1,14 @@
+# build output
+backend/cloudapp
+backend/cloudapp.exe
+frontend/dist/
+node_modules/
+
+# local state
+*.db
+*.db-shm
+*.db-wal
+.env
+frontend/.vite/
+.fakeb2/
+frontend/tsconfig.tsbuildinfo
